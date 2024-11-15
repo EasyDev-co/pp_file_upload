@@ -23,3 +23,8 @@ go.work.sum
 
 # env file
 .env
+/.idea/material_theme_project_new.xml
+/.idea/modules.xml
+/.idea/pp_file_upload.iml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml
