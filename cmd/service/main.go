@@ -1,16 +1,20 @@
 package main
 
 import (
-	"EasyDev-co/pp_file_upload/internal/clients"
 	"EasyDev-co/pp_file_upload/internal/config"
+	"EasyDev-co/pp_file_upload/internal/db"
 	"EasyDev-co/pp_file_upload/internal/handlers"
 	"EasyDev-co/pp_file_upload/internal/repository/s3"
-	"github.com/gorilla/mux"
+	"EasyDev-co/pp_file_upload/internal/services/image"
+
+	"github.com/fasthttp/router"
 	"github.com/sirupsen/logrus"
-	"net/http"
+	"github.com/valyala/fasthttp"
 )
 
 func main() {
+	maxUploadSize := 2.5 * (1024 * 1024 * 1024) // 2.5 gb
+
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -22,26 +26,25 @@ func main() {
 		return
 	}
 
-	s3client, err := clients.NewS3Client(AppConfig)
+	s3client, err := db.NewS3Client(AppConfig)
 	if err != nil {
 		log.Fatalf("Error creating S3 client: %v", err)
 		return
 	}
 
-	s3service := s3.NewS3Service(s3client, AppConfig)
+	s3repository := s3.NewS3Repository(s3client, AppConfig)
+	imageService := image.NewImageService(s3repository, AppConfig)
 
-	router := mux.NewRouter()
-	v1Router := router.PathPrefix("/v1").Subrouter()
+	r := router.New()
+	r.POST("/v1/files/upload/", handlers.NewUploadFileHandler(imageService, AppConfig).ServeFastHTTP)
 
-	v1Router.Handle("/files/upload/", handlers.NewUploadFileHandler(s3service)).Methods("POST")
-
-	server := &http.Server{
-		Addr:    ":" + AppConfig.AppPort,
-		Handler: router,
+	server := &fasthttp.Server{
+		Handler:            r.Handler,
+		MaxRequestBodySize: int(maxUploadSize), // Устанавливаем лимит тела запроса
 	}
 
 	log.Infof("Starting server on :%s...", AppConfig.AppPort)
-	if err := server.ListenAndServe(); err != nil {
+	if err := server.ListenAndServe(":" + AppConfig.AppPort); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }

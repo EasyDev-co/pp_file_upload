@@ -14,6 +14,7 @@ type Config struct {
 	YCBucketName       string
 	YCRegion           string
 	YCS3Endpoint       string
+	WatermarkPath      string
 }
 
 func LoadConfig() (Config, error) {
@@ -28,6 +29,7 @@ func LoadConfig() (Config, error) {
 		YCBucketName:       os.Getenv("YC_BUCKET_NAME"),
 		YCRegion:           os.Getenv("YC_REGION"),
 		YCS3Endpoint:       os.Getenv("YC_S3_ENDPOINT"),
+		WatermarkPath:      os.Getenv("WATERMARK_PATH"),
 	}
 	return config, nil
 }

@@ -1,4 +1,4 @@
-package clients
+package db
 
 import (
 	"EasyDev-co/pp_file_upload/internal/config"
