@@ -1,4 +1,4 @@
-package services
+package s3
 
 import (
 	"EasyDev-co/pp_file_upload/internal/clients"
@@ -10,19 +10,19 @@ import (
 	"io"
 )
 
-// S3Service структура, которая реализует интерфейс S3Service
-type S3Service struct {
+// RepositoryS3 структура, которая реализует интерфейс S3Service
+type RepositoryS3 struct {
 	client *clients.S3Client
 	cfg    config.Config
 }
 
 // NewS3Service создаем новый S3 сервис
-func NewS3Service(client *clients.S3Client, cfg config.Config) *S3Service {
-	return &S3Service{client: client, cfg: cfg}
+func NewS3Service(client *clients.S3Client, cfg config.Config) *RepositoryS3 {
+	return &RepositoryS3{client: client, cfg: cfg}
 }
 
 // BulkUpload метод для загрузки нескольких файлов в S3
-func (s *S3Service) BulkUpload(fileReaders []struct {
+func (s *RepositoryS3) BulkUpload(fileReaders []struct {
 	Name    string
 	Content io.Reader
 }) (*dto.UploadResponse, error) {
@@ -51,7 +51,7 @@ func (s *S3Service) BulkUpload(fileReaders []struct {
 }
 
 // BulkDelete метод для удаления нескольких файлов из S3
-func (s *S3Service) BulkDelete(files []string) error {
+func (s *RepositoryS3) BulkDelete(files []string) error {
 	for _, fileName := range files {
 		err := s.client.Client.RemoveObject(context.Background(), s.cfg.YCBucketName, fileName, minio.RemoveObjectOptions{})
 		if err != nil {

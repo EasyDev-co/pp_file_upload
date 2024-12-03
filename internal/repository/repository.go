@@ -1,4 +1,4 @@
-package services
+package repository
 
 import (
 	"EasyDev-co/pp_file_upload/internal/dto"

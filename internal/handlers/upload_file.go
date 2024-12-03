@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"EasyDev-co/pp_file_upload/internal/services"
+	"EasyDev-co/pp_file_upload/internal/repository"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,10 +11,10 @@ import (
 )
 
 type UploadFileHandler struct {
-	s3service services.S3ServiceInterface
+	s3service repository.S3ServiceInterface
 }
 
-func NewUploadFileHandler(s3service services.S3ServiceInterface) *UploadFileHandler {
+func NewUploadFileHandler(s3service repository.S3ServiceInterface) *UploadFileHandler {
 	return &UploadFileHandler{
 		s3service: s3service,
 	}

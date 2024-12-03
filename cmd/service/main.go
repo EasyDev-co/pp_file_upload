@@ -4,7 +4,7 @@ import (
 	"EasyDev-co/pp_file_upload/internal/clients"
 	"EasyDev-co/pp_file_upload/internal/config"
 	"EasyDev-co/pp_file_upload/internal/handlers"
-	"EasyDev-co/pp_file_upload/internal/services"
+	"EasyDev-co/pp_file_upload/internal/repository/s3"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	s3service := services.NewS3Service(s3client, AppConfig)
+	s3service := s3.NewS3Service(s3client, AppConfig)
 
 	router := mux.NewRouter()
 	v1Router := router.PathPrefix("/v1").Subrouter()
