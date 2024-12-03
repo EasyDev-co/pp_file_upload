@@ -1,83 +1,139 @@
 package handlers
 
 import (
-	"EasyDev-co/pp_file_upload/internal/repository"
-	"encoding/json"
+	"EasyDev-co/pp_file_upload/internal/config"
+	"EasyDev-co/pp_file_upload/internal/services"
+	"bytes"
 	"fmt"
+	"github.com/valyala/fasthttp"
 	"io"
-	"net/http"
-
-	log "github.com/sirupsen/logrus"
+	"mime/multipart"
+	"os"
 )
 
 type UploadFileHandler struct {
-	s3service repository.S3ServiceInterface
+	imageService services.ImageService
+	cfg          config.Config
 }
 
-func NewUploadFileHandler(s3service repository.S3ServiceInterface) *UploadFileHandler {
+func NewUploadFileHandler(imageService services.ImageService, cfg config.Config) *UploadFileHandler {
 	return &UploadFileHandler{
-		s3service: s3service,
+		imageService: imageService,
+		cfg:          cfg,
 	}
 }
 
-func (uh *UploadFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Info("Received request to upload_file")
-
-	err := r.ParseMultipartForm(10 << 20) // 10 MB
+func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
+	logoBytes, err := os.ReadFile(h.cfg.WatermarkPath)
 	if err != nil {
-		log.Error("Failed to parse form:", err)
-		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.SetBodyString("Error reading watermark file")
 		return
 	}
 
-	files := r.MultipartForm.File["files"]
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.SetBodyString("Unable to parse form")
+		return
+	}
+
+	files := form.File["files"]
 	if len(files) == 0 {
-		log.Error("No files uploaded")
-		http.Error(w, "No files uploaded", http.StatusBadRequest)
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.SetBodyString("No files uploaded")
 		return
 	}
 
-	log.Info("Decoding request body")
-
-	var fileReaders []struct {
-		Name    string
-		Content io.Reader
+	type ProcessedFile struct {
+		Name               string
+		OriginalContent    []byte
+		WatermarkedContent []byte
+		Error              error
 	}
+
+	results := make(chan ProcessedFile, len(files))
+	defer close(results)
+
+	maxGoroutines := 10
+	sem := make(chan struct{}, maxGoroutines)
 
 	for _, fileHeader := range files {
-		file, err := fileHeader.Open()
-		if err != nil {
-			log.Error("Failed to open file %s: %v", fileHeader.Filename, err)
-			http.Error(w, fmt.Sprintf("Error opening file %s: %v", fileHeader.Filename, err), http.StatusInternalServerError)
+		sem <- struct{}{}
+		go func(fileHeader *multipart.FileHeader) {
+			defer func() { <-sem }()
+
+			file, err := fileHeader.Open()
+			if err != nil {
+				results <- ProcessedFile{Error: fmt.Errorf("failed to open file %s: %v", fileHeader.Filename, err)}
+				return
+			}
+			defer file.Close()
+
+			var buf bytes.Buffer
+			_, err = io.Copy(&buf, file)
+			if err != nil {
+				results <- ProcessedFile{Error: fmt.Errorf("failed to read file %s: %v", fileHeader.Filename, err)}
+				return
+			}
+
+			compressedData, err := h.imageService.Compress(buf.Bytes())
+			if err != nil {
+				results <- ProcessedFile{Error: fmt.Errorf("failed to compress file %s: %v", fileHeader.Filename, err)}
+				return
+			}
+
+			watermarkedData, err := h.imageService.Watermark(compressedData, logoBytes)
+			if err != nil {
+				results <- ProcessedFile{Error: fmt.Errorf("failed to add watermark to file %s: %v", fileHeader.Filename, err)}
+				return
+			}
+
+			results <- ProcessedFile{
+				Name:               fileHeader.Filename,
+				OriginalContent:    compressedData,
+				WatermarkedContent: watermarkedData,
+			}
+		}(fileHeader)
+	}
+
+	var processedFiles []ProcessedFile
+
+	// Сбор результатов
+	for i := 0; i < len(files); i++ {
+		result := <-results
+		if result.Error != nil {
+			ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+			ctx.SetBodyString(fmt.Sprintf("Error processing file: %v", result.Error))
 			return
 		}
-		defer file.Close()
+		processedFiles = append(processedFiles, result)
+	}
 
-		fileReaders = append(fileReaders, struct {
-			Name    string
-			Content io.Reader
+	var uploadFiles []struct {
+		Name               string
+		OriginalContent    []byte
+		WatermarkedContent []byte
+	}
+	for _, file := range processedFiles {
+		uploadFiles = append(uploadFiles, struct {
+			Name               string
+			OriginalContent    []byte
+			WatermarkedContent []byte
 		}{
-			Name:    fileHeader.Filename,
-			Content: file,
+			Name:               file.Name,
+			OriginalContent:    file.OriginalContent,
+			WatermarkedContent: file.WatermarkedContent,
 		})
 	}
 
-	response, err := uh.s3service.BulkUpload(fileReaders)
+	uploadedFiles, err := h.imageService.Upload(uploadFiles)
 	if err != nil {
-		log.Printf("Error during file upload: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+		ctx.SetBodyString(fmt.Sprintf("Failed to upload files to S3: %v", err))
 		return
 	}
 
-	// Отправляем успешный ответ
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		log.Printf("Error encoding response: %v", err)
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("File upload completed successfully")
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.SetBodyString(fmt.Sprintf("Successfully uploaded %d files", len(*uploadedFiles)))
 }

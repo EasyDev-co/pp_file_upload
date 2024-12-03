@@ -1,9 +1,9 @@
 package s3
 
 import (
-	"EasyDev-co/pp_file_upload/internal/clients"
 	"EasyDev-co/pp_file_upload/internal/config"
-	"EasyDev-co/pp_file_upload/internal/dto"
+	"EasyDev-co/pp_file_upload/internal/db"
+	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"context"
 	"fmt"
 	"github.com/minio/minio-go/v7"
@@ -12,42 +12,70 @@ import (
 
 // RepositoryS3 структура, которая реализует интерфейс S3Service
 type RepositoryS3 struct {
-	client *clients.S3Client
+	client *db.S3Client
 	cfg    config.Config
 }
 
-// NewS3Service создаем новый S3 сервис
-func NewS3Service(client *clients.S3Client, cfg config.Config) *RepositoryS3 {
+// NewS3Repository создаем новый S3 сервис
+func NewS3Repository(client *db.S3Client, cfg config.Config) *RepositoryS3 {
 	return &RepositoryS3{client: client, cfg: cfg}
 }
 
-// BulkUpload метод для загрузки нескольких файлов в S3
 func (s *RepositoryS3) BulkUpload(fileReaders []struct {
 	Name    string
 	Content io.Reader
-}) (*dto.UploadResponse, error) {
+}) (*[]dto.UploadedFilesDTO, error) {
 	ctx := context.Background()
-	var fileURLs []string
+	fileURLs := &[]dto.UploadedFilesDTO{}
 
-	for _, file := range fileReaders {
-		_, err := s.client.Client.PutObject(
-			ctx,
-			s.cfg.YCBucketName,
-			file.Name,
-			file.Content,
-			-1,
-			minio.PutObjectOptions{ContentType: "application/octet-stream"},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("error uploading file %s to Minio: %v", file.Name, err)
-		}
-
-		fileURL := fmt.Sprintf("https://%s/%s/%s", s.cfg.YCS3Endpoint, s.cfg.YCBucketName, file.Name)
-		fileURLs = append(fileURLs, fileURL)
-
+	type uploadResult struct {
+		FileDTO dto.UploadedFilesDTO
+		Error   error
 	}
 
-	return &dto.UploadResponse{FileURLs: fileURLs}, nil
+	results := make(chan uploadResult, len(fileReaders))
+	defer close(results)
+
+	maxGoroutines := 10
+	sem := make(chan struct{}, maxGoroutines)
+
+	for _, file := range fileReaders {
+		sem <- struct{}{}
+		go func(file struct {
+			Name    string
+			Content io.Reader
+		}) {
+			defer func() { <-sem }()
+
+			var fileDTO dto.UploadedFilesDTO
+			_, err := s.client.Client.PutObject(
+				ctx,
+				s.cfg.YCBucketName,
+				file.Name,
+				file.Content,
+				-1,
+				minio.PutObjectOptions{ContentType: "application/octet-stream"},
+			)
+			if err != nil {
+				results <- uploadResult{Error: fmt.Errorf("error uploading file %s to Minio: %v", file.Name, err)}
+				return
+			}
+
+			fileURL := fmt.Sprintf("https://%s/%s/%s", s.cfg.YCS3Endpoint, s.cfg.YCBucketName, file.Name)
+			fileDTO.FileURL = fileURL
+			results <- uploadResult{FileDTO: fileDTO}
+		}(file)
+	}
+
+	for i := 0; i < len(fileReaders); i++ {
+		result := <-results
+		if result.Error != nil {
+			return nil, result.Error
+		}
+		*fileURLs = append(*fileURLs, result.FileDTO)
+	}
+
+	return fileURLs, nil
 }
 
 // BulkDelete метод для удаления нескольких файлов из S3
