@@ -13,8 +13,6 @@ import (
 )
 
 func main() {
-	maxUploadSize := 2.5 * (1024 * 1024 * 1024) // 2.5 gb
-
 	log := logrus.New()
 	log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
@@ -36,11 +34,11 @@ func main() {
 	imageService := image.NewImageService(s3repository, AppConfig)
 
 	r := router.New()
-	r.POST("/v1/files/upload/", handlers.NewUploadFileHandler(imageService, AppConfig).ServeFastHTTP)
+	r.POST("/v1/files/upload/", handlers.NewUploadFileHandler(imageService).ServeFastHTTP)
 
 	server := &fasthttp.Server{
 		Handler:            r.Handler,
-		MaxRequestBodySize: int(maxUploadSize), // Устанавливаем лимит тела запроса
+		MaxRequestBodySize: int(AppConfig.MaxUploadSize),
 	}
 
 	log.Infof("Starting server on :%s...", AppConfig.AppPort)

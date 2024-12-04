@@ -7,11 +7,7 @@ import (
 	"io"
 )
 
-func (s *imageService) Upload(files []struct {
-	Name               string
-	OriginalContent    []byte
-	WatermarkedContent []byte
-}) (*[]dto.UploadedFilesDTO, error) {
+func (s *imageService) Upload(files []dto.ProcessedFileDTO) (*[]dto.UploadedFilesDTO, error) {
 	var fileReaders []struct {
 		Name    string
 		Content io.Reader
