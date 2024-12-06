@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"EasyDev-co/pp_file_upload/internal/model/api"
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"EasyDev-co/pp_file_upload/internal/response"
 	"EasyDev-co/pp_file_upload/internal/services"
@@ -22,6 +23,19 @@ func NewUploadFileHandler(imageService services.ImageService) *UploadFileHandler
 }
 
 func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
+	kindergarten := string(ctx.QueryArgs().Peek("kindergarten"))
+	photoTheme := string(ctx.QueryArgs().Peek("photo_theme"))
+	region := string(ctx.QueryArgs().Peek("region"))
+
+	if kindergarten == "" || photoTheme == "" || region == "" {
+		response.RespondError(
+			ctx,
+			fasthttp.StatusBadRequest,
+			"Missing required query parameters: kindergarten, photo_theme, region",
+		)
+		return
+	}
+
 	files, err := h.getMultipartFiles(ctx)
 	if err != nil {
 		response.RespondError(
@@ -42,7 +56,7 @@ func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	uploadedFiles, err := h.imageService.Upload(processedFiles)
+	uploadedFiles, err := h.imageService.Upload(processedFiles, kindergarten, photoTheme, region)
 	if err != nil {
 		response.RespondError(
 			ctx,
@@ -51,7 +65,16 @@ func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		)
 		return
 	}
-	response.RespondSuccess(ctx, fmt.Sprintf("Successfully uploaded %d files", len(*uploadedFiles)))
+
+	var photoResponses []api.PhotoResponse
+	for _, file := range *uploadedFiles {
+		photoResponses = append(photoResponses, api.PhotoResponse{
+			OriginalPhoto:    file.OriginalContent,
+			WatermarkedPhoto: file.WatermarkedContent,
+		})
+	}
+
+	response.RespondSuccessJSON(ctx, photoResponses)
 }
 
 func (h *UploadFileHandler) getMultipartFiles(ctx *fasthttp.RequestCtx) ([]*multipart.FileHeader, error) {
