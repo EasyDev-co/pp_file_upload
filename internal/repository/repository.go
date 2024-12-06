@@ -11,4 +11,5 @@ type S3ServiceInterface interface {
 		Content io.Reader
 	}) (*[]dto.UploadedFilesDTO, error)
 	BulkDelete(files []string) error
+	UploadFile(name string, content io.Reader) (string, error)
 }

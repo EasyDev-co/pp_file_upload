@@ -4,37 +4,75 @@ import (
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"bytes"
 	"fmt"
-	"io"
+	"sync"
 )
 
-func (s *imageService) Upload(files []dto.ProcessedFileDTO) (*[]dto.UploadedFilesDTO, error) {
-	var fileReaders []struct {
-		Name    string
-		Content io.Reader
-	}
+func (s *imageService) Upload(
+	files []dto.ProcessedFileDTO,
+	kindergarten, photoTheme,
+	region string,
+) (*[]dto.SortedFilesDTO, error) {
+	var sortedFiles []dto.SortedFilesDTO
+	results := make(chan dto.SortedFilesDTO, len(files))
+	errors := make(chan error, len(files))
+	var wg sync.WaitGroup
+
+	maxGoroutines := 10
+	sem := make(chan struct{}, maxGoroutines)
 
 	for _, file := range files {
-		fileReaders = append(fileReaders, struct {
-			Name    string
-			Content io.Reader
-		}{
-			Name:    fmt.Sprintf("original/%s", file.Name),
-			Content: bytes.NewReader(file.OriginalContent),
-		})
+		wg.Add(1)
+		sem <- struct{}{}
 
-		fileReaders = append(fileReaders, struct {
-			Name    string
-			Content io.Reader
-		}{
-			Name:    fmt.Sprintf("watermarked/%s", file.Name),
-			Content: bytes.NewReader(file.WatermarkedContent),
-		})
+		go func(file dto.ProcessedFileDTO) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			originalURL, err := s.s3service.UploadFile(
+				fmt.Sprintf("%s/%s/%s/%s", region, kindergarten, photoTheme, file.Name),
+				bytes.NewReader(file.OriginalContent),
+			)
+			if err != nil {
+				errors <- fmt.Errorf("failed to upload original file %s: %w", file.Name, err)
+				return
+			}
+
+			watermarkedURL, err := s.s3service.UploadFile(
+				fmt.Sprintf("%s/%s/%s/watermarked/%s", region, kindergarten, photoTheme, file.Name),
+				bytes.NewReader(file.WatermarkedContent),
+			)
+			if err != nil {
+				errors <- fmt.Errorf("failed to upload watermarked file %s: %w", file.Name, err)
+				return
+			}
+
+			results <- dto.SortedFilesDTO{
+				OriginalContent:    originalURL,
+				WatermarkedContent: watermarkedURL,
+			}
+		}(file)
 	}
 
-	uploadedFiles, err := s.s3service.BulkUpload(fileReaders)
-	if err != nil {
-		return nil, fmt.Errorf("failed to upload files to S3: %w", err)
+	go func() {
+		wg.Wait()
+		close(results)
+		close(errors)
+	}()
+
+	var uploadErr error
+	go func() {
+		for err := range errors {
+			uploadErr = err
+		}
+	}()
+
+	for res := range results {
+		sortedFiles = append(sortedFiles, res)
 	}
 
-	return uploadedFiles, nil
+	if uploadErr != nil {
+		return nil, uploadErr
+	}
+
+	return &sortedFiles, nil
 }

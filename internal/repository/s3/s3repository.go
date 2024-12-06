@@ -78,6 +78,25 @@ func (s *RepositoryS3) BulkUpload(fileReaders []struct {
 	return fileURLs, nil
 }
 
+func (s *RepositoryS3) UploadFile(name string, content io.Reader) (string, error) {
+	ctx := context.Background()
+
+	fileURL := fmt.Sprintf("https://%s/%s/%s", s.cfg.YCS3Endpoint, s.cfg.YCBucketName, name)
+	_, err := s.client.Client.PutObject(
+		ctx,
+		s.cfg.YCBucketName,
+		name,
+		content,
+		-1,
+		minio.PutObjectOptions{ContentType: "application/octet-stream"},
+	)
+	if err != nil {
+		return "", fmt.Errorf("error uploading file %s: %v", name, err)
+	}
+
+	return fileURL, nil
+}
+
 // BulkDelete метод для удаления нескольких файлов из S3
 func (s *RepositoryS3) BulkDelete(files []string) error {
 	for _, fileName := range files {
