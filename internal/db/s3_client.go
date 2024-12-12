@@ -3,10 +3,11 @@ package db
 import (
 	"EasyDev-co/pp_file_upload/internal/config"
 	"fmt"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"net/http"
 	"time"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 // S3Client структура для работы с Minio клиентом

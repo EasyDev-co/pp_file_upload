@@ -2,6 +2,7 @@ package image
 
 import (
 	"bytes"
+
 	"github.com/pkg/errors"
 
 	"image"
