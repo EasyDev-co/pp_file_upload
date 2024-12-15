@@ -6,8 +6,9 @@ import (
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"context"
 	"fmt"
-	"github.com/minio/minio-go/v7"
 	"io"
+
+	"github.com/minio/minio-go/v7"
 )
 
 // RepositoryS3 структура, которая реализует интерфейс S3Service

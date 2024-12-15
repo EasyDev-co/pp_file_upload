@@ -1,28 +1,42 @@
 package handlers
 
 import (
+	"EasyDev-co/pp_file_upload/internal/config"
 	"EasyDev-co/pp_file_upload/internal/model/api"
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"EasyDev-co/pp_file_upload/internal/response"
 	"EasyDev-co/pp_file_upload/internal/services"
 	"bytes"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"io"
 	"mime/multipart"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
 )
 
 type UploadFileHandler struct {
 	imageService services.ImageService
+	cfg          config.Config
 }
 
-func NewUploadFileHandler(imageService services.ImageService) *UploadFileHandler {
+func NewUploadFileHandler(imageService services.ImageService, cfg config.Config) *UploadFileHandler {
 	return &UploadFileHandler{
 		imageService: imageService,
+		cfg:          cfg,
 	}
 }
 
 func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
+	authToken := string(ctx.Request.Header.Peek("Authorization-Token"))
+	if authToken != h.cfg.AuthSecretKey {
+		response.RespondError(
+			ctx,
+			fasthttp.StatusUnauthorized,
+			"Not Authorized",
+		)
+		return
+	}
 	kindergarten := string(ctx.QueryArgs().Peek("kindergarten"))
 	photoTheme := string(ctx.QueryArgs().Peek("photo_theme"))
 	region := string(ctx.QueryArgs().Peek("region"))
@@ -38,6 +52,7 @@ func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	files, err := h.getMultipartFiles(ctx)
 	if err != nil {
+		log.Warn("Error getting multipart files: ", err)
 		response.RespondError(
 			ctx,
 			fasthttp.StatusBadRequest,
@@ -48,6 +63,7 @@ func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	processedFiles, err := h.processFiles(files)
 	if err != nil {
+		log.Fatalf("Error processing files: %v", err)
 		response.RespondError(
 			ctx,
 			fasthttp.StatusInternalServerError,
