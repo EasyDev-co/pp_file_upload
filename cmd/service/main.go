@@ -34,7 +34,7 @@ func main() {
 	imageService := image.NewImageService(s3repository, AppConfig)
 
 	r := router.New()
-	r.POST("/v1/files/upload/", handlers.NewUploadFileHandler(imageService).ServeFastHTTP)
+	r.POST("/v1/files/upload/", handlers.NewUploadFileHandler(imageService, AppConfig).ServeFastHTTP)
 
 	server := &fasthttp.Server{
 		Handler:            r.Handler,
