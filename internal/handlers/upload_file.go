@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"EasyDev-co/pp_file_upload/internal/config"
 	"EasyDev-co/pp_file_upload/internal/model/api"
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"EasyDev-co/pp_file_upload/internal/response"
@@ -16,21 +17,23 @@ import (
 
 type UploadFileHandler struct {
 	imageService services.ImageService
+	cfg          config.Config
 }
 
-func NewUploadFileHandler(imageService services.ImageService) *UploadFileHandler {
+func NewUploadFileHandler(imageService services.ImageService, cfg config.Config) *UploadFileHandler {
 	return &UploadFileHandler{
 		imageService: imageService,
+		cfg:          cfg,
 	}
 }
 
 func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	authToken := string(ctx.Request.Header.Peek("Authorization-Token"))
-	if authToken == "" {
+	if authToken != h.cfg.AuthSecretKey {
 		response.RespondError(
 			ctx,
 			fasthttp.StatusUnauthorized,
-			"Missing Authorization-Token in headers",
+			"Not Authorized",
 		)
 		return
 	}
