@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("Error loading config: %v", err)
 		return
 	}
-
+	log.Infof("AppConfig build: %v", AppConfig)
 	s3client, err := db.NewS3Client(AppConfig)
 	if err != nil {
 		log.Fatalf("Error creating S3 client: %v", err)
