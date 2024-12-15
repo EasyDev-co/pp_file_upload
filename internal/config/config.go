@@ -2,10 +2,10 @@ package config
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"strconv"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -36,7 +36,7 @@ func LoadConfig() (Config, error) {
 		YCS3Endpoint:       os.Getenv("YC_S3_ENDPOINT"),
 		WatermarkPath:      os.Getenv("WATERMARK_PATH"),
 	}
-
+	log.Printf("Config: %+v", config)
 	maxUploadSizeStr := os.Getenv("MAX_UPLOAD_SIZE")
 	if maxUploadSizeStr != "" {
 		maxUploadSize, err := strconv.ParseInt(maxUploadSizeStr, 10, 64)
