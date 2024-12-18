@@ -1,6 +1,7 @@
 package main
 
 import (
+	"EasyDev-co/pp_file_upload/internal/client"
 	"EasyDev-co/pp_file_upload/internal/config"
 	"EasyDev-co/pp_file_upload/internal/db"
 	"EasyDev-co/pp_file_upload/internal/handlers"
@@ -29,11 +30,20 @@ func main() {
 		return
 	}
 
+	apiClient := client.NewClient(AppConfig.BaseURL, AppConfig.RequestTimeout)
+
 	s3repository := s3.NewS3Repository(s3client, AppConfig)
 	imageService := image.NewImageService(s3repository, AppConfig)
 
 	r := router.New()
-	r.POST("/v1/files/upload/", handlers.NewUploadFileHandler(imageService, AppConfig).ServeFastHTTP)
+
+	r.POST(
+		"/v1/files/upload/",
+		handlers.NewUploadFileHandler(imageService, AppConfig).ServeFastHTTP,
+	)
+	r.POST("/v1/files/send_uploaded/",
+		handlers.NewSendUploadedFilesHandler(imageService, AppConfig, apiClient).ServeFastHTTP,
+	)
 
 	server := &fasthttp.Server{
 		Handler:            r.Handler,

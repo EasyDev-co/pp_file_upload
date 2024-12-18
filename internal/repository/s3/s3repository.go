@@ -82,6 +82,8 @@ func (s *RepositoryS3) BulkUpload(fileReaders []struct {
 func (s *RepositoryS3) UploadFile(name string, content io.Reader) (string, error) {
 	ctx := context.Background()
 
+	fmt.Printf("URL: %s\n", name)
+
 	fileURL := fmt.Sprintf("https://%s/%s/%s", s.cfg.YCS3Endpoint, s.cfg.YCBucketName, name)
 	_, err := s.client.Client.PutObject(
 		ctx,

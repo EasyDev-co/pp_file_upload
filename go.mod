@@ -4,6 +4,7 @@ go 1.23.3
 
 require (
 	github.com/fasthttp/router v1.5.2
+	github.com/gojek/heimdall v4.2.0+incompatible
 	github.com/h2non/bimg v1.1.9
 	github.com/joho/godotenv v1.5.1
 	github.com/minio/minio-go/v7 v7.0.80
@@ -17,6 +18,8 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
+	github.com/gojektech/heimdall v4.2.0+incompatible // indirect
+	github.com/gojektech/valkyrie v0.0.0-20190210220504-8f62c1e7ba45 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect

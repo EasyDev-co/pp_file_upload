@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Config struct {
@@ -18,6 +19,8 @@ type Config struct {
 	WatermarkPath      string
 	WatermarkBytes     []byte
 	MaxUploadSize      int64
+	BaseURL            string
+	RequestTimeout     time.Duration
 }
 
 func LoadConfig() (Config, error) {
@@ -34,6 +37,7 @@ func LoadConfig() (Config, error) {
 		YCRegion:           os.Getenv("YC_REGION"),
 		YCS3Endpoint:       os.Getenv("YC_S3_ENDPOINT"),
 		WatermarkPath:      os.Getenv("WATERMARK_PATH"),
+		BaseURL:            os.Getenv("BASE_URL"),
 	}
 	maxUploadSizeStr := os.Getenv("MAX_UPLOAD_SIZE")
 	if maxUploadSizeStr != "" {
@@ -53,6 +57,13 @@ func LoadConfig() (Config, error) {
 		}
 		config.WatermarkBytes = watermarkBytes
 	}
+
+	requestTimeout, err := time.ParseDuration(os.Getenv("REQUEST_TIMEOUT"))
+	if err != nil {
+		config.RequestTimeout = time.Second * 30
+		return config, nil
+	}
+	config.RequestTimeout = requestTimeout
 
 	return config, nil
 }
