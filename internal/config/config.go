@@ -8,7 +8,13 @@ import (
 	"time"
 )
 
+const (
+	Dev  = "dev"
+	Prod = "prod"
+)
+
 type Config struct {
+	AppEnv             string
 	AppPort            string
 	AuthSecretKey      string
 	AwsAccessKeyId     string
@@ -21,6 +27,8 @@ type Config struct {
 	MaxUploadSize      int64
 	BaseURL            string
 	RequestTimeout     time.Duration
+	CertFile           string
+	KeyFile            string
 }
 
 func LoadConfig() (Config, error) {
@@ -29,6 +37,7 @@ func LoadConfig() (Config, error) {
 	}
 
 	config := Config{
+		AppEnv:             os.Getenv("APP_ENV"),
 		AppPort:            os.Getenv("APP_PORT"),
 		AuthSecretKey:      os.Getenv("AUTH_SECRET_KEY"),
 		AwsAccessKeyId:     os.Getenv("AWS_ACCESS_KEY_ID"),
@@ -38,6 +47,8 @@ func LoadConfig() (Config, error) {
 		YCS3Endpoint:       os.Getenv("YC_S3_ENDPOINT"),
 		WatermarkPath:      os.Getenv("WATERMARK_PATH"),
 		BaseURL:            os.Getenv("BASE_URL"),
+		CertFile:           os.Getenv("CERT_FILE"),
+		KeyFile:            os.Getenv("KEY_FILE"),
 	}
 	maxUploadSizeStr := os.Getenv("MAX_UPLOAD_SIZE")
 	if maxUploadSizeStr != "" {

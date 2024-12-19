@@ -38,6 +38,7 @@ COPY .env /app/.env
 
 # Копируем watermark/logo.png
 COPY watermark/logo.png /app/watermark/logo.png
+COPY /etc/letsencrypt/live/upload.photodetstvo.ru/* /etc/letsencrypt/live/upload.photodetstvo.ru/
 
 # Указываем порт
 EXPOSE 8081
