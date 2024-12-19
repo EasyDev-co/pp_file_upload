@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -27,6 +28,7 @@ type Config struct {
 	MaxUploadSize      int64
 	BaseURL            string
 	RequestTimeout     time.Duration
+	AllowedOrigins     []string
 	CertFile           string
 	KeyFile            string
 }
@@ -46,6 +48,7 @@ func LoadConfig() (Config, error) {
 		YCRegion:           os.Getenv("YC_REGION"),
 		YCS3Endpoint:       os.Getenv("YC_S3_ENDPOINT"),
 		WatermarkPath:      os.Getenv("WATERMARK_PATH"),
+		AllowedOrigins:     strings.Split(os.Getenv("ALLOWED_ORIGINS"), ","),
 		BaseURL:            os.Getenv("BASE_URL"),
 		CertFile:           os.Getenv("CERT_FILE"),
 		KeyFile:            os.Getenv("KEY_FILE"),

@@ -8,6 +8,7 @@ import (
 	"EasyDev-co/pp_file_upload/internal/config"
 	"EasyDev-co/pp_file_upload/internal/db"
 	"EasyDev-co/pp_file_upload/internal/handlers"
+	"EasyDev-co/pp_file_upload/internal/middleware"
 	"EasyDev-co/pp_file_upload/internal/repository/s3"
 	"EasyDev-co/pp_file_upload/internal/services/image"
 
@@ -48,10 +49,12 @@ func main() {
 		handlers.NewSendUploadedFilesHandler(imageService, appConfig, apiClient).ServeFastHTTP,
 	)
 
+	handler := middleware.CORS(r.Handler, appConfig.AllowedOrigins)
+
 	switch appConfig.AppEnv {
 	case config.Dev:
 		server := &fasthttp.Server{
-			Handler:            r.Handler,
+			Handler:            handler,
 			MaxRequestBodySize: int(appConfig.MaxUploadSize),
 		}
 
@@ -70,7 +73,7 @@ func main() {
 		}
 
 		server := &fasthttp.Server{
-			Handler:            r.Handler,
+			Handler:            handler,
 			MaxRequestBodySize: int(appConfig.MaxUploadSize),
 			TLSConfig:          tlsConfig,
 		}
