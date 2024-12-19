@@ -1,9 +1,8 @@
 # Используем конкретную архитектуру и версию golang
-FROM --platform=linux/amd64 golang:1.23.3-bullseye AS builder
+FROM --platform=linux/amd64 golang:1.23.3-alpine AS builder
 
-# Установка необходимых пакетов
-RUN apt-get update && apt-get install -y \
-    pkg-config libvips-dev gcc
+# Устанавливаем необходимые пакеты
+RUN apk add --no-cache pkgconfig vips-dev gcc musl-dev
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -22,10 +21,10 @@ WORKDIR /app/cmd/service
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o /main .
 
 # Финальный образ
-FROM --platform=linux/amd64 debian:bullseye-slim
+FROM --platform=linux/amd64 alpine:latest
 
 # Устанавливаем необходимые зависимости
-RUN apt-get update && apt-get install -y libvips
+RUN apk add --no-cache vips
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
