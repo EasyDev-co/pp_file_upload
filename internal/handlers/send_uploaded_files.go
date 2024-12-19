@@ -112,7 +112,7 @@ func (h *SendUploadedFilesHandler) getMultipartFiles(ctx *fasthttp.RequestCtx) (
 		return nil, fmt.Errorf("unable to parse form")
 	}
 
-	files := form.File["files"]
+	files := form.File["photos"]
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no files uploaded")
 	}

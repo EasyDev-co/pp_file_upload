@@ -10,6 +10,5 @@ services:
       - /etc/letsencrypt:/app/certs:ro
     ports:
       - "8081:8081"
-      - "443:443"
     env_file:
       - .env
