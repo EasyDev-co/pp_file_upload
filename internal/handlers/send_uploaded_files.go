@@ -133,6 +133,7 @@ func (h *SendUploadedFilesHandler) processFiles(files []*multipart.FileHeader) (
 
 			file, err := fileHeader.Open()
 			if err != nil {
+				log.WithError(err).Error("Error opening fileHeader:", fileHeader.Filename)
 				results <- dto.ProcessedFileDTO{}
 				return
 			}
@@ -141,22 +142,26 @@ func (h *SendUploadedFilesHandler) processFiles(files []*multipart.FileHeader) (
 			var buf bytes.Buffer
 			_, err = io.Copy(&buf, file)
 			if err != nil {
+				log.WithError(err).Error("Error copy file to buffer:", fileHeader.Filename)
 				results <- dto.ProcessedFileDTO{}
 				return
 			}
 
 			compressedData, err := h.imageService.Compress(buf.Bytes())
 			if err != nil {
+				log.WithError(err).Error("Error compressing file:", fileHeader.Filename)
 				results <- dto.ProcessedFileDTO{}
 				return
 			}
 
 			watermarkedData, err := h.imageService.Watermark(compressedData)
 			if err != nil {
+				log.WithError(err).Error("Error making watermark for file:", fileHeader.Filename)
 				results <- dto.ProcessedFileDTO{}
 				return
 			}
 
+			log.Infof("Success: %s", fileHeader.Filename)
 			results <- dto.ProcessedFileDTO{
 				Name:               fileHeader.Filename,
 				OriginalContent:    compressedData,
