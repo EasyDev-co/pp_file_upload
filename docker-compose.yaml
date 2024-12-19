@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  uploader:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: go_uploader
+    volumes:
+      - /etc/letsencrypt:/app/certs:ro
+    ports:
+      - "8081:8081"
+      - "443:443"
+    env_file:
+      - .env
