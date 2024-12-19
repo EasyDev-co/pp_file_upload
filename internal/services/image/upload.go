@@ -4,6 +4,7 @@ import (
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"bytes"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"sync"
 )
 
@@ -28,8 +29,15 @@ func (s *imageService) Upload(
 			defer wg.Done()
 			defer func() { <-sem }()
 
+			name := fmt.Sprintf("%s/%s/%s/%s", region, kindergarten, photoTheme, file.Name)
+
+			log.WithFields(log.Fields{
+				"filename":  file.Name,
+				"full_name": name,
+			}).Info("file-to-upload info")
+
 			originalURL, err := s.s3service.UploadFile(
-				fmt.Sprintf("%s/%s/%s/%s", region, kindergarten, photoTheme, file.Name),
+				name,
 				bytes.NewReader(file.OriginalContent),
 			)
 			if err != nil {
