@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
+	"fmt"
+
 	"EasyDev-co/pp_file_upload/internal/client"
 	"EasyDev-co/pp_file_upload/internal/config"
 	"EasyDev-co/pp_file_upload/internal/db"
@@ -19,39 +22,68 @@ func main() {
 		FullTimestamp: true,
 	})
 
-	AppConfig, err := config.LoadConfig()
+	appConfig, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 		return
 	}
-	s3client, err := db.NewS3Client(AppConfig)
+	s3client, err := db.NewS3Client(appConfig)
 	if err != nil {
 		log.Fatalf("Error creating S3 client: %v", err)
 		return
 	}
 
-	apiClient := client.NewClient(AppConfig.BaseURL, AppConfig.RequestTimeout)
+	apiClient := client.NewClient(appConfig.BaseURL, appConfig.RequestTimeout)
 
-	s3repository := s3.NewS3Repository(s3client, AppConfig)
-	imageService := image.NewImageService(s3repository, AppConfig)
+	s3repository := s3.NewS3Repository(s3client, appConfig)
+	imageService := image.NewImageService(s3repository, appConfig)
 
 	r := router.New()
 
 	r.POST(
 		"/v1/files/upload/",
-		handlers.NewUploadFileHandler(imageService, AppConfig).ServeFastHTTP,
+		handlers.NewUploadFileHandler(imageService, appConfig).ServeFastHTTP,
 	)
 	r.POST("/v1/files/send_uploaded/",
-		handlers.NewSendUploadedFilesHandler(imageService, AppConfig, apiClient).ServeFastHTTP,
+		handlers.NewSendUploadedFilesHandler(imageService, appConfig, apiClient).ServeFastHTTP,
 	)
 
-	server := &fasthttp.Server{
-		Handler:            r.Handler,
-		MaxRequestBodySize: int(AppConfig.MaxUploadSize),
-	}
+	switch appConfig.AppEnv {
+	case config.Dev:
+		server := &fasthttp.Server{
+			Handler:            r.Handler,
+			MaxRequestBodySize: int(appConfig.MaxUploadSize),
+		}
 
-	log.Infof("Starting server on :%s...", AppConfig.AppPort)
-	if err := server.ListenAndServe(":" + AppConfig.AppPort); err != nil {
-		log.Fatalf("Error starting server: %v", err)
+		log.Infof("Starting HTTP server on :%s...", appConfig.AppPort)
+		if err := server.ListenAndServe(fmt.Sprintf(":%s", appConfig.AppPort)); err != nil {
+			log.Fatalf("Error starting server: %v", err)
+		}
+	case config.Prod:
+		cert, err := tls.LoadX509KeyPair(appConfig.CertFile, appConfig.KeyFile)
+		if err != nil {
+			log.Fatalf("Error loading SSL certificate and key: %v", err)
+		}
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			MinVersion:   tls.VersionTLS13,
+		}
+
+		server := &fasthttp.Server{
+			Handler:            r.Handler,
+			MaxRequestBodySize: int(appConfig.MaxUploadSize),
+			TLSConfig:          tlsConfig,
+		}
+
+		log.Infof("Starting HTTPS server on :%s...", appConfig.AppPort)
+		if err := server.ListenAndServeTLS(
+			fmt.Sprintf(":%s", appConfig.AppPort),
+			appConfig.CertFile,
+			appConfig.KeyFile,
+		); err != nil {
+			log.Fatalf("Error starting server: %v", err)
+		}
+	default:
+		log.Fatalf("Unsupported environment: %s", appConfig.AppEnv)
 	}
 }
