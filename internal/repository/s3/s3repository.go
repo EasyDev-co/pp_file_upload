@@ -9,6 +9,7 @@ import (
 	"io"
 
 	"github.com/minio/minio-go/v7"
+	log "github.com/sirupsen/logrus"
 )
 
 // RepositoryS3 структура, которая реализует интерфейс S3Service
@@ -94,6 +95,7 @@ func (s *RepositoryS3) UploadFile(name string, content io.Reader) (string, error
 		minio.PutObjectOptions{ContentType: "application/octet-stream"},
 	)
 	if err != nil {
+		log.WithError(err).Error("failed to upload file")
 		return "", fmt.Errorf("error uploading file %s: %v", name, err)
 	}
 
