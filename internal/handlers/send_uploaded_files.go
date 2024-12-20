@@ -164,8 +164,8 @@ func (h *SendUploadedFilesHandler) processFiles(files []*multipart.FileHeader) (
 			log.Infof("Success: %s", fileHeader.Filename)
 			results <- dto.ProcessedFileDTO{
 				Name:               fileHeader.Filename,
-				OriginalContent:    compressedData,
-				WatermarkedContent: watermarkedData,
+				OriginalContent:    &compressedData,
+				WatermarkedContent: &watermarkedData,
 			}
 		}(fileHeader)
 	}

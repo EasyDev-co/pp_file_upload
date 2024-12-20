@@ -11,6 +11,6 @@ type SortedFilesDTO struct {
 
 type ProcessedFileDTO struct {
 	Name               string // Имя файла
-	OriginalContent    []byte
-	WatermarkedContent []byte
+	OriginalContent    *[]byte
+	WatermarkedContent *[]byte
 }
