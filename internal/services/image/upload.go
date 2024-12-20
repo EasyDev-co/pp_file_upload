@@ -36,28 +36,18 @@ func (s *imageService) Upload(
 				"full_name": name,
 			}).Info("file-to-upload info")
 
-			if file.OriginalContent == nil {
-				errors <- fmt.Errorf("original file content is nil %s: ", file.Name)
-				return
-			}
-
 			originalURL, err := s.s3service.UploadFile(
 				name,
-				bytes.NewReader(*file.OriginalContent),
+				bytes.NewReader(file.OriginalContent),
 			)
 			if err != nil {
 				errors <- fmt.Errorf("failed to upload original file %s: %w", file.Name, err)
 				return
 			}
 
-			if file.WatermarkedContent == nil {
-				errors <- fmt.Errorf("watermarked file content is nil %s: ", file.Name)
-				return
-			}
-
 			watermarkedURL, err := s.s3service.UploadFile(
 				fmt.Sprintf("%s/%s/%s/watermarked/%s", region, kindergarten, photoTheme, file.Name),
-				bytes.NewReader(*file.WatermarkedContent),
+				bytes.NewReader(file.WatermarkedContent),
 			)
 			if err != nil {
 				errors <- fmt.Errorf("failed to upload watermarked file %s: %w", file.Name, err)
