@@ -92,7 +92,10 @@ func (s *RepositoryS3) UploadFile(name string, content io.Reader) (string, error
 		name,
 		content,
 		-1,
-		minio.PutObjectOptions{ContentType: "application/octet-stream"},
+		minio.PutObjectOptions{
+			ContentType:  "application/octet-stream",
+			UserMetadata: map[string]string{"x-amz-acl": "public-read"},
+		},
 	)
 	if err != nil {
 		log.WithError(err).Error("failed to upload file")
