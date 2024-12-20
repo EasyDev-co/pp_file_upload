@@ -21,7 +21,12 @@ func (s *imageService) Upload(
 	maxGoroutines := 10
 	sem := make(chan struct{}, maxGoroutines)
 
-	for _, file := range files {
+	filesPtrs := make([]*dto.ProcessedFileDTO, len(files))
+	for i, _ := range files {
+		filesPtrs = append(filesPtrs, &files[i])
+	}
+
+	for _, file := range filesPtrs {
 		wg.Add(1)
 		sem <- struct{}{}
 
