@@ -18,7 +18,7 @@ func (s *imageService) Upload(
 	errors := make(chan error, len(files))
 	var wg sync.WaitGroup
 
-	maxGoroutines := 10
+	maxGoroutines := 5
 	sem := make(chan struct{}, maxGoroutines)
 
 	for _, file := range files {
