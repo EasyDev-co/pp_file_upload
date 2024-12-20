@@ -49,7 +49,7 @@ func main() {
 		handlers.NewSendUploadedFilesHandler(imageService, appConfig, apiClient).ServeFastHTTP,
 	)
 
-	handler := middleware.CORS(r.Handler, appConfig.AllowedOrigins)
+	handler := middleware.Timer(middleware.CORS(r.Handler, appConfig.AllowedOrigins))
 
 	switch appConfig.AppEnv {
 	case config.Dev:
