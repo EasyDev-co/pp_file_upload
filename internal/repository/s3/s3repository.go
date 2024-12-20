@@ -86,9 +86,6 @@ func (s *RepositoryS3) UploadFile(name string, content io.Reader) (string, error
 	fmt.Printf("URL: %s\n", name)
 
 	fileURL := fmt.Sprintf("https://%s/%s/%s", s.cfg.YCS3Endpoint, s.cfg.YCBucketName, name)
-	if content == nil {
-		return "", fmt.Errorf("error uploading file, content is nil %s: %v", name)
-	}
 	_, err := s.client.Client.PutObject(
 		ctx,
 		s.cfg.YCBucketName,

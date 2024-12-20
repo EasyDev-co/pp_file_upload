@@ -146,8 +146,8 @@ func (h *UploadFileHandler) processFiles(files []*multipart.FileHeader) ([]dto.P
 
 			results <- dto.ProcessedFileDTO{
 				Name:               fileHeader.Filename,
-				OriginalContent:    &compressedData,
-				WatermarkedContent: &watermarkedData,
+				OriginalContent:    compressedData,
+				WatermarkedContent: watermarkedData,
 			}
 		}(fileHeader)
 	}
