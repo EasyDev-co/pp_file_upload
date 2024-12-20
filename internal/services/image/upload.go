@@ -18,14 +18,14 @@ func (s *imageService) Upload(
 	errors := make(chan error, len(files))
 	var wg sync.WaitGroup
 
-	maxGoroutines := 5
+	maxGoroutines := 10
 	sem := make(chan struct{}, maxGoroutines)
 
 	for _, file := range files {
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(file dto.ProcessedFileDTO) {
+		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
 
@@ -58,7 +58,7 @@ func (s *imageService) Upload(
 				OriginalContent:    originalURL,
 				WatermarkedContent: watermarkedURL,
 			}
-		}(file)
+		}()
 	}
 
 	go func() {
