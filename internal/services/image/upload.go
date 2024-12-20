@@ -30,7 +30,7 @@ func (s *imageService) Upload(
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func() {
+		go func(*dto.ProcessedFileDTO) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
@@ -63,7 +63,7 @@ func (s *imageService) Upload(
 				OriginalContent:    originalURL,
 				WatermarkedContent: watermarkedURL,
 			}
-		}()
+		}(file)
 	}
 
 	go func() {
