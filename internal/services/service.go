@@ -5,5 +5,5 @@ import "EasyDev-co/pp_file_upload/internal/model/dto"
 type ImageService interface {
 	Compress(input []byte) ([]byte, error)
 	Watermark(original []byte) ([]byte, error)
-	Upload(files []dto.ProcessedFileDTO, kindergarten, photoTheme, region string) (*[]dto.SortedFilesDTO, error)
+	Upload(files []dto.ProcessedFileDTO, kindergarten, photoTheme, region string) ([]dto.SortedFilesDTO, error)
 }

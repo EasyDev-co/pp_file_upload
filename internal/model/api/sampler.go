@@ -14,4 +14,5 @@ type RequestBody struct {
 type PhotoPayload struct {
 	OriginalPhoto    string `json:"original_photo"`
 	WatermarkedPhoto string `json:"watermarked_photo"`
+	FileNumber       int    `json:"file_number"`
 }
