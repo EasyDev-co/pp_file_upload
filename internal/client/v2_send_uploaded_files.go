@@ -24,6 +24,7 @@ func (c *Client) V2SendUploadedFiles(ctx context.Context, sortedFiles []dto.Sort
 			requestBody.Photos, api.PhotoPayload{
 				OriginalPhoto:    file.OriginalContent,
 				WatermarkedPhoto: file.WatermarkedContent,
+				FileNumber:       file.FileNumber,
 			},
 		)
 	}

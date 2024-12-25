@@ -12,7 +12,7 @@ func (s *imageService) Upload(
 	files []dto.ProcessedFileDTO,
 	kindergarten, photoTheme,
 	region string,
-) (*[]dto.SortedFilesDTO, error) {
+) ([]dto.SortedFilesDTO, error) {
 	var sortedFiles []dto.SortedFilesDTO
 	results := make(chan dto.SortedFilesDTO, len(files))
 	errors := make(chan error, len(files))
@@ -57,6 +57,7 @@ func (s *imageService) Upload(
 			results <- dto.SortedFilesDTO{
 				OriginalContent:    originalURL,
 				WatermarkedContent: watermarkedURL,
+				FileNumber:         file.FileNumber,
 			}
 		}()
 	}
@@ -82,5 +83,5 @@ func (s *imageService) Upload(
 		return nil, uploadErr
 	}
 
-	return &sortedFiles, nil
+	return sortedFiles, nil
 }

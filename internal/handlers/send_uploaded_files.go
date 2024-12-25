@@ -12,6 +12,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"io"
 	"mime/multipart"
+	"sort"
 )
 
 type SendUploadedFilesHandler struct {
@@ -88,20 +89,18 @@ func (h *SendUploadedFilesHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	var photoResponses []dto.SortedFilesDTO
-	for _, file := range *uploadedFiles {
-		photoResponses = append(photoResponses, dto.SortedFilesDTO{
-			OriginalContent:    file.OriginalContent,
-			WatermarkedContent: file.WatermarkedContent,
-		})
-	}
-	err = h.client.V2SendUploadedFiles(ctx, photoResponses, kindergartenID)
+	sort.Slice(uploadedFiles, func(i, j int) bool {
+		return uploadedFiles[i].FileNumber < uploadedFiles[j].FileNumber
+	})
+
+	err = h.client.V2SendUploadedFiles(ctx, uploadedFiles, kindergartenID)
 	if err != nil {
 		response.RespondError(
 			ctx,
 			fasthttp.StatusInternalServerError,
 			fmt.Sprintf("filed to send request %v", err),
 		)
+		return
 	}
 	ctx.SetStatusCode(fasthttp.StatusOK)
 }
@@ -126,9 +125,11 @@ func (h *SendUploadedFilesHandler) processFiles(files []*multipart.FileHeader) (
 	maxGoroutines := 10
 	sem := make(chan struct{}, maxGoroutines)
 
+	fileCnt := 0
 	for _, fileHeader := range files {
+		fileCnt++
 		sem <- struct{}{}
-		go func(fileHeader *multipart.FileHeader) {
+		go func(fileHeader *multipart.FileHeader, fileNumber int) {
 			defer func() { <-sem }()
 
 			file, err := fileHeader.Open()
@@ -166,8 +167,9 @@ func (h *SendUploadedFilesHandler) processFiles(files []*multipart.FileHeader) (
 				Name:               fileHeader.Filename,
 				OriginalContent:    compressedData,
 				WatermarkedContent: watermarkedData,
+				FileNumber:         fileNumber,
 			}
-		}(fileHeader)
+		}(fileHeader, fileCnt)
 	}
 
 	var processedFiles []dto.ProcessedFileDTO
