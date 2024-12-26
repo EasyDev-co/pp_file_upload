@@ -12,7 +12,7 @@ func CORS(next fasthttp.RequestHandler, allowedOrigins []string) fasthttp.Reques
 		if isValidOrigin(origin, allowedOrigins) {
 			ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
 			ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-			ctx.Response.Header.Set("Access-Control-Allow-Headers", "authorization-token, content-type")
+			ctx.Response.Header.Set("Access-Control-Allow-Headers", "authorization, content-type")
 			ctx.Response.Header.Set("Access-Control-Allow-Credentials", "true")
 		}
 

@@ -63,7 +63,7 @@ func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 
 	processedFiles, err := h.processFiles(files)
 	if err != nil {
-		log.Fatalf("Error processing files: %v", err)
+		log.Errorf("Error processing files: %v", err)
 		response.RespondError(
 			ctx,
 			fasthttp.StatusInternalServerError,
@@ -83,7 +83,7 @@ func (h *UploadFileHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	var photoResponses []api.PhotoResponse
-	for _, file := range *uploadedFiles {
+	for _, file := range uploadedFiles {
 		photoResponses = append(photoResponses, api.PhotoResponse{
 			OriginalPhoto:    file.OriginalContent,
 			WatermarkedPhoto: file.WatermarkedContent,

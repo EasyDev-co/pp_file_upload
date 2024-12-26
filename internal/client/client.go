@@ -12,12 +12,14 @@ import (
 
 type Client struct {
 	BaseURL    string
+	SigningKey string
 	HTTPClient *httpclient.Client
 }
 
-func NewClient(baseURL string, timeout time.Duration) *Client {
+func NewClient(baseURL string, timeout time.Duration, signingKey string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
+		SigningKey: signingKey,
 		HTTPClient: httpclient.NewClient(httpclient.WithHTTPTimeout(timeout)),
 	}
 }

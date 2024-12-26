@@ -34,7 +34,7 @@ func main() {
 		return
 	}
 
-	apiClient := client.NewClient(appConfig.BaseURL, appConfig.RequestTimeout)
+	apiClient := client.NewClient(appConfig.BaseURL, appConfig.RequestTimeout, appConfig.SigningKey)
 
 	s3repository := s3.NewS3Repository(s3client, appConfig)
 	imageService := image.NewImageService(s3repository, appConfig)
@@ -49,7 +49,8 @@ func main() {
 		handlers.NewSendUploadedFilesHandler(imageService, appConfig, apiClient).ServeFastHTTP,
 	)
 
-	handler := middleware.Timer(middleware.CORS(r.Handler, appConfig.AllowedOrigins))
+	handler := middleware.Timer(middleware.CORS(
+		middleware.JWT(r.Handler, appConfig.SigningKey), appConfig.AllowedOrigins))
 
 	switch appConfig.AppEnv {
 	case config.Dev:
