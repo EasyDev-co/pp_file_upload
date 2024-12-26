@@ -4,12 +4,12 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func CORS(next fasthttp.RequestHandler, allowedOrigins []string) fasthttp.RequestHandler {
+func (m *Middleware) CORS(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		// Добавляем CORS-заголовки
 		origin := string(ctx.Request.Header.Peek("Origin"))
 
-		if isValidOrigin(origin, allowedOrigins) {
+		if isValidOrigin(origin, m.allowedOrigins) {
 			ctx.Response.Header.Set("Access-Control-Allow-Origin", origin)
 			ctx.Response.Header.Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
 			ctx.Response.Header.Set("Access-Control-Allow-Headers", "authorization, content-type")
@@ -32,6 +32,5 @@ func isValidOrigin(origin string, allowedOrigins []string) bool {
 			return true
 		}
 	}
-
 	return false
 }

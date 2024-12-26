@@ -83,8 +83,6 @@ func (s *RepositoryS3) BulkUpload(fileReaders []struct {
 func (s *RepositoryS3) UploadFile(name string, content io.Reader) (string, error) {
 	ctx := context.Background()
 
-	fmt.Printf("URL: %s\n", name)
-
 	fileURL := fmt.Sprintf("https://%s/%s/%s", s.cfg.YCS3Endpoint, s.cfg.YCBucketName, name)
 	_, err := s.client.Client.PutObject(
 		ctx,
@@ -112,7 +110,7 @@ func (s *RepositoryS3) BulkDelete(files []string) error {
 		if err != nil {
 			return fmt.Errorf("error deleting file %s from Minio: %v", fileName, err)
 		}
-		fmt.Printf("File %s deleted successfully from bucket %s\n", fileName, s.cfg.YCBucketName)
+		log.Infof("File %s deleted successfully from bucket %s\n", fileName, s.cfg.YCBucketName)
 	}
 
 	return nil
