@@ -31,6 +31,7 @@ type Config struct {
 	AllowedOrigins     []string
 	CertFile           string
 	KeyFile            string
+	SigningKey         string
 }
 
 func LoadConfig() (Config, error) {
@@ -52,6 +53,7 @@ func LoadConfig() (Config, error) {
 		BaseURL:            os.Getenv("BASE_URL"),
 		CertFile:           os.Getenv("CERT_FILE"),
 		KeyFile:            os.Getenv("KEY_FILE"),
+		SigningKey:         os.Getenv("SIGNING_KEY"),
 	}
 	maxUploadSizeStr := os.Getenv("MAX_UPLOAD_SIZE")
 	if maxUploadSizeStr != "" {

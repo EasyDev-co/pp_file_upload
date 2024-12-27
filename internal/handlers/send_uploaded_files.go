@@ -34,15 +34,6 @@ func NewSendUploadedFilesHandler(
 }
 
 func (h *SendUploadedFilesHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
-	authToken := string(ctx.Request.Header.Peek("Authorization-Token"))
-	if authToken != h.cfg.AuthSecretKey {
-		response.RespondError(
-			ctx,
-			fasthttp.StatusUnauthorized,
-			"Not Authorized",
-		)
-		return
-	}
 	kindergarten := string(ctx.FormValue("kindergarten"))
 	kindergartenID := string(ctx.FormValue("kindergarten_id"))
 	photoTheme := string(ctx.FormValue("photo_theme"))
@@ -98,7 +89,7 @@ func (h *SendUploadedFilesHandler) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		response.RespondError(
 			ctx,
 			fasthttp.StatusInternalServerError,
-			fmt.Sprintf("filed to send request %v", err),
+			fmt.Sprintf("failed to send request %v", err),
 		)
 		return
 	}

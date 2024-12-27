@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Timer(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+func (m *Middleware) Timer(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(ctx *fasthttp.RequestCtx) {
 		start := time.Now()
 

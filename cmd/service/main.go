@@ -1,6 +1,7 @@
 package main
 
 import (
+	"EasyDev-co/pp_file_upload/internal/services/jwt"
 	"crypto/tls"
 	"fmt"
 
@@ -34,10 +35,12 @@ func main() {
 		return
 	}
 
-	apiClient := client.NewClient(appConfig.BaseURL, appConfig.RequestTimeout)
-
 	s3repository := s3.NewS3Repository(s3client, appConfig)
 	imageService := image.NewImageService(s3repository, appConfig)
+	jwtService := jwt.NewJWTService(appConfig.SigningKey)
+	mdlware := middleware.NewMiddleware(jwtService, appConfig.AllowedOrigins)
+
+	apiClient := client.NewClient(appConfig.BaseURL, appConfig.RequestTimeout, jwtService)
 
 	r := router.New()
 
@@ -49,7 +52,7 @@ func main() {
 		handlers.NewSendUploadedFilesHandler(imageService, appConfig, apiClient).ServeFastHTTP,
 	)
 
-	handler := middleware.Timer(middleware.CORS(r.Handler, appConfig.AllowedOrigins))
+	handler := mdlware.Timer(mdlware.CORS(mdlware.JWT(r.Handler)))
 
 	switch appConfig.AppEnv {
 	case config.Dev:

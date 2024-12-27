@@ -1,18 +1,31 @@
 package client
 
 import (
+	"EasyDev-co/pp_file_upload/internal/consts"
 	"EasyDev-co/pp_file_upload/internal/model/api"
 	"EasyDev-co/pp_file_upload/internal/model/dto"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
 // V2SendUploadedFiles отправляет POST запрос для сохранения загруженных файлов
 func (c *Client) V2SendUploadedFiles(ctx context.Context, sortedFiles []dto.SortedFilesDTO, kindergartenID string) error {
 	endpoint := "/api/v2/photo/save_photos/"
+	userId, ok := ctx.Value(consts.UserIdKey).(string)
+	if !ok {
+		return fmt.Errorf("value userId isn't string")
+	}
+	log.Infof("userId: %s", userId)
+
+	tokenString, err := c.jwtService.GenerateJWT(userId)
+	if err != nil {
+		log.Errorf("Error generating token: %v", err)
+		return fmt.Errorf("error generating token: %v", err)
+	}
 
 	requestBody := api.RequestBody{
 		KindergartenID: kindergartenID,
@@ -34,10 +47,9 @@ func (c *Client) V2SendUploadedFiles(ctx context.Context, sortedFiles []dto.Sort
 		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	fmt.Println(string(requestBodyJSON))
-
 	response, err := c.makeRequest(ctx, http.MethodPost, endpoint, nil, map[string]string{
-		"Content-Type": "application/json",
+		"Content-Type":  "application/json",
+		"Authorization": "Bearer " + tokenString,
 	}, bytes.NewBuffer(requestBodyJSON))
 
 	if err != nil {

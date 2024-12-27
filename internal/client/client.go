@@ -1,6 +1,7 @@
 package client
 
 import (
+	"EasyDev-co/pp_file_upload/internal/services"
 	"context"
 	"fmt"
 	"github.com/gojek/heimdall/httpclient"
@@ -12,12 +13,14 @@ import (
 
 type Client struct {
 	BaseURL    string
+	jwtService services.JWTService
 	HTTPClient *httpclient.Client
 }
 
-func NewClient(baseURL string, timeout time.Duration) *Client {
+func NewClient(baseURL string, timeout time.Duration, jwtService services.JWTService) *Client {
 	return &Client{
 		BaseURL:    baseURL,
+		jwtService: jwtService,
 		HTTPClient: httpclient.NewClient(httpclient.WithHTTPTimeout(timeout)),
 	}
 }
