@@ -7,7 +7,11 @@ import (
 
 	"image"
 	"image/jpeg"
-	"image/png"
+	_ "image/png"
+)
+
+const (
+	jpegQuality = 20
 )
 
 // Compress сжатие изображений
@@ -17,22 +21,14 @@ func (s *imageService) Compress(input []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	if format != "jpeg" && format != "png" {
+		return nil, errors.New("unsupported image format")
+	}
+
 	var buf bytes.Buffer
 
-	switch format {
-	case "jpeg":
-		opt := jpeg.Options{Quality: 75}
-		err = jpeg.Encode(&buf, img, &opt)
-	case "png":
-		encoder := png.Encoder{CompressionLevel: png.BestCompression}
-		err = encoder.Encode(&buf, img)
-	default:
-		return nil, errors.Wrap(err, "unsupported image format")
-	}
-
-	if err != nil {
-		return nil, err
-	}
+	opt := jpeg.Options{Quality: jpegQuality}
+	err = jpeg.Encode(&buf, img, &opt)
 
 	return buf.Bytes(), nil
 }
